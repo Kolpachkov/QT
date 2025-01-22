@@ -24,11 +24,11 @@ int main(int argc, char *argv[])
 #include <QSplitter>
 #include <QTabWidget>
 #include <QSpinBox>
-#include <QVBoxLayout>
+#include <QVBoxLayout> 
 #include <QWebEngineView>
 #include <QTimer>
 #include <QMouseEvent>
-#include <opencv2/opencv.hpp>
+#include <opencv2/opencv.hpp> 
 #include <vector>
 #include <QTcpSocket>
 

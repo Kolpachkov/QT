@@ -1,0 +1,57 @@
+cmake_minimum_required(VERSION 3.5)
+
+project(Test VERSION 0.1 LANGUAGES CXX)
+
+# Включаем текущий каталог для include
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+# Включаем автоматическую обработку Qt инструментов
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+
+# Указываем стандарт C++
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Подключаем Qt6 и необходимые модули
+find_package(QT NAMES Qt6 COMPONENTS Widgets Network WebEngineWidgets REQUIRED)
+find_package(Qt6 COMPONENTS Widgets Network WebEngineWidgets REQUIRED)
+
+# Список файлов проекта
+set(PROJECT_SOURCES
+    main.cpp
+    mainwindow.cpp
+    mainwindow.h
+)
+
+# Определяем сборку в зависимости от версии Qt
+if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
+    qt_add_executable(Test
+        MANUAL_FINALIZATION
+        ${PROJECT_SOURCES}
+    )
+else()
+    message(FATAL_ERROR "This project requires Qt6.")
+endif()
+
+# Подключаем библиотеки Qt6
+target_link_libraries(Test PRIVATE
+    Qt6::Widgets
+    Qt6::Network
+    Qt6::WebEngineWidgets
+)
+
+# Настройки для платформы MacOS и Windows
+set_target_properties(Test PROPERTIES
+    MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
+    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    MACOSX_BUNDLE TRUE
+    WIN32_EXECUTABLE TRUE
+)
+
+# Завершаем настройку приложения для Qt6
+if(QT_VERSION_MAJOR EQUAL 6)
+    qt_finalize_executable(Test)
+endif()
