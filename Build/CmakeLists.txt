@@ -1,0 +1,42 @@
+cmake_minimum_required(VERSION 3.10)
+
+project(VideoStreamWithMaps)
+
+set(CMAKE_CXX_STANDARD 14)
+
+# Qt5 configuration
+find_package(Qt5 REQUIRED Core Widgets WebEngine)
+
+# OpenCV configuration
+find_package(OpenCV REQUIRED)
+
+# Add source files
+set(SOURCES
+    main.cpp
+    MainWindow.cpp
+    VideoStream.cpp
+    MapView.cpp
+    CameraCalibration.cpp
+    SocketClient.cpp
+)
+
+# Add header files
+set(HEADERS
+    MainWindow.h
+    VideoStream.h
+    MapView.h
+    CameraCalibration.h
+    SocketClient.h
+)
+
+# Add the UI resources
+set(RESOURCES resources.qrc)
+
+# Include directories
+include_directories(${OpenCV_INCLUDE_DIRS})
+
+# Create the executable
+add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS} ${RESOURCES})
+
+# Link libraries
+target_link_libraries(${PROJECT_NAME} Qt5::Core Qt5::Widgets Qt5::WebEngine ${OpenCV_LIBS})
