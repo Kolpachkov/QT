@@ -1,0 +1,44 @@
+#include <QApplication>
+#include <QListView>
+#include <QVBoxLayout>
+#include <QPushButton>
+#include <QWidget>
+#include "stringlistmodel.h"
+
+int main(int argc, char *argv[]) {
+    QApplication app(argc, argv);
+
+    // Начальные данные
+    QStringList initialData = {"Item 1", "Item 2", "Item 3"};
+    auto model = new StringListModel(initialData);
+
+    // Представление (View)
+    auto listView = new QListView;
+    listView->setModel(model);
+
+    // Кнопки для добавления и удаления элементов
+    auto addButton = new QPushButton("Добавить элемент");
+    auto removeButton = new QPushButton("Удалить последний элемент");
+
+    // Основной виджет
+    auto mainWidget = new QWidget;
+    auto layout = new QVBoxLayout(mainWidget);
+    layout->addWidget(listView);
+    layout->addWidget(addButton);
+    layout->addWidget(removeButton);
+
+    // Логика кнопок
+    QObject::connect(addButton, &QPushButton::clicked, [=]() {
+        model->addItem("Новый элемент");
+    });
+
+    QObject::connect(removeButton, &QPushButton::clicked, [=]() {
+        model->removeItem(model->rowCount() - 1);
+    });
+
+    mainWidget->setWindowTitle("Пример Model/View");
+    mainWidget->resize(400, 300);
+    mainWidget->show();
+
+    return app.exec();
+}

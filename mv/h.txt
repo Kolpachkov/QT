@@ -1,0 +1,25 @@
+#ifndef STRINGLISTMODEL_H
+#define STRINGLISTMODEL_H
+
+#include <QAbstractListModel>
+#include <QStringList>
+
+class StringListModel : public QAbstractListModel {
+    Q_OBJECT
+
+public:
+    explicit StringListModel(const QStringList &data, QObject *parent = nullptr);
+
+    // Реализация базовых методов модели
+    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+
+    // Методы для управления данными
+    void addItem(const QString &item);
+    void removeItem(int row);
+
+private:
+    QStringList m_data;
+};
+
+#endif // STRINGLISTMODEL_H

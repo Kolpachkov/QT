@@ -1,0 +1,32 @@
+#include "stringlistmodel.h"
+
+StringListModel::StringListModel(const QStringList &data, QObject *parent)
+    : QAbstractListModel(parent), m_data(data) {}
+
+int StringListModel::rowCount(const QModelIndex &parent) const {
+    if (parent.isValid()) return 0; // Только корневые элементы
+    return m_data.size();
+}
+
+QVariant StringListModel::data(const QModelIndex &index, int role) const {
+    if (!index.isValid() || index.row() >= m_data.size()) return QVariant();
+
+    if (role == Qt::DisplayRole) {
+        return m_data[index.row()];
+    }
+
+    return QVariant();
+}
+
+void StringListModel::addItem(const QString &item) {
+    beginInsertRows(QModelIndex(), m_data.size(), m_data.size());
+    m_data.append(item);
+    endInsertRows();
+}
+
+void StringListModel::removeItem(int row) {
+    if (row < 0 || row >= m_data.size()) return;
+    beginRemoveRows(QModelIndex(), row, row);
+    m_data.removeAt(row);
+    endRemoveRows();
+}
