@@ -1,44 +1,108 @@
-#include <QApplication>
-#include <QListView>
-#include <QVBoxLayout>
-#include <QPushButton>
-#include <QWidget>
-#include "stringlistmodel.h"
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
+#include <QTimer>
+#include <QImage>
+#include <QPixmap>
 
-int main(int argc, char *argv[]) {
-    QApplication app(argc, argv);
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , ui(new Ui::MainWindow)
+    , calibrating(false)
+{
+    ui->setupUi(this);
+    cap.open(0);  // Открываем камеру
+    if (!cap.isOpened()) {
+        ui->statusbar->showMessage("Не удалось открыть камеру.");
+        return;
+    }
 
-    // Начальные данные
-    QStringList initialData = {"Item 1", "Item 2", "Item 3"};
-    auto model = new StringListModel(initialData);
+    QTimer *timer = new QTimer(this);
+    connect(timer, &QTimer::timeout, this, &MainWindow::processFrame);
+    timer->start(30);  // Обновление кадров каждые 30 мс
+}
 
-    // Представление (View)
-    auto listView = new QListView;
-    listView->setModel(model);
+MainWindow::~MainWindow()
+{
+    cap.release();
+    delete ui;
+}
 
-    // Кнопки для добавления и удаления элементов
-    auto addButton = new QPushButton("Добавить элемент");
-    auto removeButton = new QPushButton("Удалить последний элемент");
+void MainWindow::processFrame()
+{
+    cv::Mat frame;
+    cap >> frame;
+    if (frame.empty()) return;
 
-    // Основной виджет
-    auto mainWidget = new QWidget;
-    auto layout = new QVBoxLayout(mainWidget);
-    layout->addWidget(listView);
-    layout->addWidget(addButton);
-    layout->addWidget(removeButton);
+    cv::Mat gray;
+    cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
 
-    // Логика кнопок
-    QObject::connect(addButton, &QPushButton::clicked, [=]() {
-        model->addItem("Новый элемент");
-    });
+    std::vector<cv::Point2f> corners;
+    bool found = cv::findChessboardCorners(gray, cv::Size(9, 6), corners);
 
-    QObject::connect(removeButton, &QPushButton::clicked, [=]() {
-        model->removeItem(model->rowCount() - 1);
-    });
+    if (found && calibrating) {
+        cv::drawChessboardCorners(frame, cv::Size(9, 6), corners, found);
+        objpoints.push_back(std::vector<cv::Point3f>());
+        std::vector<cv::Point3f>& objp = objpoints.back();
+        objp.resize(9 * 6);
+        for (int i = 0; i < 6; ++i)
+            for (int j = 0; j < 9; ++j)
+                objp[i * 9 + j] = cv::Point3f(j, i, 0);
+        imgpoints.push_back(corners);
+    }
 
-    mainWidget->setWindowTitle("Пример Model/View");
-    mainWidget->resize(400, 300);
-    mainWidget->show();
+    QImage qimg(frame.data, frame.cols, frame.rows, frame.step, QImage::Format_BGR888);
+    ui->label->setPixmap(QPixmap::fromImage(qimg));
+}
 
-    return app.exec();
+void MainWindow::on_startCalibration_clicked()
+{
+    calibrating = true;
+    objpoints.clear();
+    imgpoints.clear();
+    ui->statusbar->showMessage("Калибровка начата...");
+}
+
+void MainWindow::on_stopCalibration_clicked()
+{
+    calibrating = false;
+    if (objpoints.size() > 0) {
+        calibrateCamera();
+        ui->statusbar->showMessage("Калибровка завершена.");
+    } else {
+        ui->statusbar->showMessage("Не удалось найти углы шахматной доски для калибровки.");
+    }
+}
+
+void MainWindow::calibrateCamera()
+{
+    cv::Mat frame;
+    cap >> frame;
+    if (frame.empty()) return;
+
+    cv::Size frameSize(frame.cols, frame.rows);
+    std::vector<cv::Mat> rvecs, tvecs;
+    cv::calibrateCamera(objpoints, imgpoints, frameSize, cameraMatrix, distCoeffs, rvecs, tvecs);
+
+    // Сохранение параметров калибровки
+    cv::FileStorage fs("calibration_params.yml", cv::FileStorage::WRITE);
+    fs << "cameraMatrix" << cameraMatrix << "distCoeffs" << distCoeffs;
+    fs.release();
+}
+
+void MainWindow::on_showUndistorted_clicked()
+{
+    showUndistorted();
+}
+
+void MainWindow::showUndistorted()
+{
+    cv::Mat frame;
+    cap >> frame;
+    if (frame.empty()) return;
+
+    cv::Mat undistorted;
+    cv::undistort(frame, undistorted, cameraMatrix, distCoeffs);
+
+    QImage qimg(undistorted.data, undistorted.cols, undistorted.rows, undistorted.step, QImage::Format_BGR888);
+    ui->label->setPixmap(QPixmap::fromImage(qimg));
 }

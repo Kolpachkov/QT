@@ -1,25 +1,37 @@
-#ifndef STRINGLISTMODEL_H
-#define STRINGLISTMODEL_H
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
 
-#include <QAbstractListModel>
-#include <QStringList>
+#include <QMainWindow>
+#include <opencv2/opencv.hpp>
 
-class StringListModel : public QAbstractListModel {
+QT_BEGIN_NAMESPACE
+namespace Ui { class MainWindow; }
+QT_END_NAMESPACE
+
+class MainWindow : public QMainWindow
+{
     Q_OBJECT
 
 public:
-    explicit StringListModel(const QStringList &data, QObject *parent = nullptr);
+    MainWindow(QWidget *parent = nullptr);
+    ~MainWindow();
 
-    // Реализация базовых методов модели
-    int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-
-    // Методы для управления данными
-    void addItem(const QString &item);
-    void removeItem(int row);
+private slots:
+    void on_startCalibration_clicked();
+    void on_stopCalibration_clicked();
+    void on_showUndistorted_clicked();
 
 private:
-    QStringList m_data;
+    Ui::MainWindow *ui;
+    cv::VideoCapture cap;
+    std::vector<std::vector<cv::Point3f>> objpoints;
+    std::vector<std::vector<cv::Point2f>> imgpoints;
+    cv::Mat cameraMatrix, distCoeffs;
+    bool calibrating;
+
+    void processFrame();
+    void calibrateCamera();
+    void showUndistorted();
 };
 
-#endif // STRINGLISTMODEL_H
+#endif // MAINWINDOW_H
